@@ -20,9 +20,18 @@ hero:
   height: 500px;
 }
 
+.love-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 @media (max-width: 1100px) {
   .love-icon {
     position: static !important;
+    width: 300px;
+    height: 300px;
+    margin: 0 auto;
   }
 }
 </style>
