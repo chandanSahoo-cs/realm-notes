@@ -54,6 +54,12 @@ When a client requests a resource (e.g., `https://api.example.com/orders`), mult
    When terminating, 4-way handshake executes: FIN -> ACK -> FIN -> ACK.
 ```
 
+### Latency vs. Throughput
+In system performance engineering, latency and throughput represent complementary metrics:
+- **Latency (Duration):** The time required for a single request to travel from client to server and return a response (Round-Trip Time / RTT), measured in milliseconds (`ms`). Low latency means fast response times.
+- **Throughput (Volume):** The rate of work a system handles per unit time, measured in Requests Per Second (`RPS`), Transactions Per Second (`TPS`), or network bandwidth (`Gbps`). High throughput means high concurrency.
+- **The Architectural Trade-Off:** High throughput does not guarantee low latency. Techniques like **micro-batching** increase overall system throughput by packing 50 operations into a single disk/network I/O call, but individual requests experience higher latency while waiting for the batch buffer to fill.
+
 ---
 
 ## 2. Transport Protocols: TCP, UDP, and QUIC (Layer 4)
@@ -173,6 +179,21 @@ Load balancers distribute incoming traffic across pools of servers to maximize a
 ### Health Checking Mechanisms
 - **L4 Health Checks:** Periodically sends TCP SYN packets. Verifies that the port is listening, but cannot detect application deadlocks or HTTP 500 errors.
 - **L7 Deep Health Checks:** Sends an HTTP request (e.g., `GET /healthz`). The application validates internal database and cache connectivity before returning `200 OK`.
+
+### Proxies: Forward Proxy vs. Reverse Proxy
+
+```text
+Forward Proxy (Client-Facing / Egress):
+[ Clients inside Office ] ──▶ [ Forward Proxy ] ──▶ [ Public Internet / Servers ]
+- Sits in front of clients; hides client identity and internal IP addresses.
+- Used for corporate URL filtering, VPN tunnels, content caching, and logging egress traffic.
+
+Reverse Proxy (Server-Facing / Ingress):
+[ External Public Internet ] ──▶ [ Reverse Proxy ] ──▶ [ Internal Server Cluster ]
+- Sits in front of backend servers; hides backend network topology and private IPs.
+- Handles SSL/TLS termination, centralized response compression (gzip/brotli), load balancing, 
+  DDoS protection, and rate limiting (e.g., NGINX, HAProxy, Envoy).
+```
 
 ---
 

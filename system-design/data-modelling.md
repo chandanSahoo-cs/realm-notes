@@ -168,3 +168,37 @@ When designing schemas for distributed or partitioned databases:
 - **Use Compound Partition Keys:** Combine a high-cardinality grouping identifier with an ordering key:
   - In Cassandra: `PRIMARY KEY ((tenant_id), created_at)` — hashes `tenant_id` to locate the node, and orders records by `created_at` on that node.
   - In distributed SQL: Shard by `hash(account_id)` to distribute writes, while keeping each account's transactions co-located on a single shard.
+
+---
+
+## Database Replication & High-Availability Topologies
+
+Scaling databases beyond single-instance constraints involves configuring replication topologies and disaster recovery strategies:
+
+```text
+Single-Leader (Primary-Replica) Topology:
+Client Writes  ──▶ [ Primary Database ]
+                          │
+          ┌───────────────┴───────────────┐  Asynchronous or Synchronous Replication
+          ▼                               ▼
+ [ Read Replica 1 ]              [ Read Replica 2 ]  ◀── Client Reads (Load Balanced)
+```
+
+### 1. Single-Leader (Primary-Replica / Master-Slave)
+- **Mechanics:** All write operations (`INSERT`, `UPDATE`, `DELETE`) are processed exclusively by the Primary node. The Primary streams committed changes to one or more Read Replicas.
+- **Synchronous vs. Asynchronous Replication:**
+  - **Synchronous:** The Primary waits for at least one replica to write changes to disk before acknowledging the client. Prevents data loss on failover, but write latency is throttled by the slowest replica.
+  - **Asynchronous:** The Primary acknowledges writes immediately and propagates data in the background. High write throughput, but replica lag can serve stale reads and risk data loss if the Primary dies before replication completes.
+- **Failover:** When the Primary crashes, health-checking orchestrators promote a healthy replica to become the new Primary.
+
+### 2. Multi-Leader (Multi-Master) Setup
+- **Mechanics:** Multiple database nodes across distinct geographic regions accept both reads and writes, synchronizing changes asynchronously across data centers.
+- **Write Conflict Resolution Strategies:**
+  - **Last-Write-Wins (LWW):** Updates are timestamped; the latest timestamp overwrites earlier writes. Prone to silent data loss caused by clock skew across servers.
+  - **Conflict-Free Replicated Data Types (CRDTs):** Data structures (e.g., convergent counters, sets) designed to merge concurrent divergent operations deterministically.
+  - **Application-Level Merge:** Conflicting versions are preserved and surfaced to application code or end-users for reconciliation (e.g., Git-style conflict resolution).
+
+### 3. Data Redundancy & Disaster Recovery
+- **Snapshot Backups:** Periodic point-in-time image dumps (e.g., daily full snapshot + hourly incremental logs) stored in object storage (S3).
+- **Continuous Replication & Point-In-Time Recovery (PITR):** Continually streams Write-Ahead Logs to remote storage, allowing restoring database state to any specific second before a corruption event or accidental table drop.
+

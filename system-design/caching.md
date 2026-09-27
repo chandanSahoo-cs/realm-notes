@@ -163,3 +163,29 @@ Application  -->  Writes to Primary Database (Committed Transaction)
 
 - **Guaranteed Consistency:** Invalidation events are emitted only after transactions have been committed to the database log.
 - **Decoupled Architecture:** Application services are freed from maintaining distributed cache invalidation hooks.
+
+---
+
+## Redis Data Structures & Architectural Patterns
+
+Redis is more than a simple string key-value store; it provides optimized in-memory data structures tailored for specific distributed patterns:
+
+| Data Structure | Key Commands | Complexity | Production Use Case |
+|---|---|---|---|
+| **Strings** | `SET`, `GET`, `SET key val NX EX 60`, `MGET` | `O(1)` | Serialized JSON caching, distributed locking (`SET NX`), rate limiting counters (`INCR`). |
+| **Lists** | `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LLEN` | `O(1)` push/pop | FIFO Task Queues (`LPUSH` + `RPOP`) or LIFO Stacks (`LPUSH` + `LPOP`), recent activity feeds. |
+| **Hashes** | `HSET`, `HGET`, `HGETALL`, `HINCRBY` | `O(1)` per field | Modeling entity objects (`user:101` -> fields: `name`, `email`); allows updating single fields without re-serializing whole JSON. |
+| **Sets** | `SADD`, `SREM`, `SISMEMBER`, `SINTER` | `O(1)` membership | Unique item collections, tag associations, social mutual friend intersections (`SINTER`). |
+| **Sorted Sets (ZSET)**| `ZADD`, `ZRANGEBYSCORE`, `ZREVRANK` | `O(log N)` | Gaming leaderboards, real-time rank tracking, sliding-window rate limiters (score = timestamp). |
+| **Streams** | `XADD`, `XREADGROUP`, `XACK` | `O(1)` append | Distributed append-only event stream with consumer group semantics (lightweight Kafka alternative). |
+| **Bitmaps / HyperLogLog**| `SETBIT`, `PFADD`, `PFCOUNT` | `O(1)` memory | Tracking daily active users (DAU) and cardinality estimation of unique visitors using ~12 KB RAM. |
+
+### Redis Key Naming Best Practices
+Use hierarchical namespacing delimited by colons:
+```text
+object_type:primary_id:attribute
+- user:441:profile
+- order:9921:items
+- rate_limit:ip_203.0.113.45:minute
+```
+
