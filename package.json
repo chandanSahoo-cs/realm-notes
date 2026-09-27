@@ -30,5 +30,10 @@
     "medium-zoom": "^1.1.0",
     "pdfjs-dist": "^6.2.108",
     "pdfobject": "^2.3.1"
+  },
+  "overrides": {
+    "postcss": {
+      "nanoid": "5.1.16"
+    }
   }
 }
